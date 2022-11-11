@@ -14,25 +14,26 @@ inputs:
     description: "The sentrybuilder password to log in to docker to push the successful image"
 runs:
   using: "composite"
-  defaults:
-      run:
-        shell: bash
   steps:
     # Note: we cannot checkout the project here because we need relay to build relay-deps
     - name: Check project checkout is present at the correct path
       run: test -d ${{ inputs.project_name }}
+      shell: bash
     - name: Checkout self-hosted if needed by another project
-      if: ${{ inputs.project_name != "self-hosted" }}
+      if: ${{ inputs.project_name != 'self-hosted' }}
       uses: actions/checkout@v3
       with:
         repository: "getsentry/self-hosted"
         path: self-hosted
     - name: Check needed project containers are built
-      if: ${{ inputs.project_name != "self-hosted" }}
+      if: ${{ inputs.project_name != 'self-hosted' }}
       run: test "$(docker images -q ${{ inputs.project_name }} 2> /dev/null)" == ""
+      shell: bash
     - name: Run the installer
       run: ./self-hosted/install.sh --no-report-self-hosted-issues
+      shell: bash
     - name: Run tests
+      shell: bash
       run: |
         set +e
         ./self-hosted/test.sh
@@ -45,11 +46,13 @@ runs:
           exit $test_return;
         fi
     - name: Get short SHA for docker tag
-      if: ${{ inputs.project_name != "self-hosted" && github.ref_name == "master" }}
+      if: ${{ inputs.project_name != 'self-hosted' && github.ref_name == 'master' }}
       id: sha_short
+      shell: bash
       run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - name: Push built docker image
-      if: ${{ inputs.project_name != "self-hosted" && github.ref_name == "master" }}
+      if: ${{ inputs.project_name != 'self-hosted' && github.ref_name == 'master' }}
+      shell: bash
       run: |
         echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin
         docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
