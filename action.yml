@@ -1,0 +1,58 @@
+name: "Sentry self-hosted end-to-end tests"
+inputs:
+  project_name:
+    required: true
+    description: "e.g. snuba, sentry, relay, self-hosted"
+  local_image:
+    required: false
+    description: "The built relay, snuba, sentry image to test against."
+  docker_repo:
+    required: false
+    description: "Docker target repo for publishing, e.g. ghcr.io/getsentry/snuba"
+  docker_password:
+    required: false
+    description: "The sentrybuilder password to log in to docker to push the successful image"
+runs:
+  using: "composite"
+  steps:
+    # Note: we cannot checkout the project here because we need relay to build relay-deps
+    - name: Check project checkout is present at the correct path
+      run: test -d ${{ inputs.project_name }}
+    - name: Checkout self-hosted if needed by another project
+      if: ${{ inputs.project_name != "self-hosted" }}
+      uses: actions/checkout@v3
+      with:
+        repository: "getsentry/self-hosted"
+        path: self-hosted
+    - name: Check needed project containers are built
+      if: ${{ inputs.project_name != "self-hosted" }}
+      run: test "$(docker images -q ${{ inputs.project_name }} 2> /dev/null)" == ""
+    - name: Run the installer
+      run: ./self-hosted/install.sh --no-report-self-hosted-issues
+    - name: Run tests
+      run: |
+        set +e
+        ./self-hosted/test.sh
+        test_returns=$?
+        set -e
+        if [[ $test_return -ne 0 ]]; then
+          echo "Test failed.";
+          docker-compose ps;
+          docker-compose logs;
+          exit $test_return;
+        fi
+     - name: Get short SHA for docker tag
+       if: ${{ inputs.project_name != "self-hosted" && github.ref_name == "master" }}
+       id: sha_short
+       run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+     - name: Push built docker image
+       if: ${{ inputs.project_name != "self-hosted" && github.ref_name == "master" }}
+       run: |
+        echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
+        docker push ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${GITHUB_SHA}
+        docker push ${{ inputs.docker_repo }}:${GITHUB_SHA}
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:nightly
+        docker push ${{ inputs.docker_repo }}:nightly
+
