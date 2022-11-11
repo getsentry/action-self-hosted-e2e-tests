@@ -30,13 +30,16 @@ runs:
       run: test "$(docker images -q ${{ inputs.project_name }} 2> /dev/null)" == ""
       shell: bash
     - name: Run the installer
-      run: ./self-hosted/install.sh --no-report-self-hosted-issues
+      run: |
+        cd self-hosted
+        ./install.sh --no-report-self-hosted-issues
       shell: bash
     - name: Run tests
       shell: bash
       run: |
         set +e
-        ./self-hosted/test.sh
+        cd self-hosted
+        ./test.sh
         test_returns=$?
         set -e
         if [[ $test_return -ne 0 ]]; then
