@@ -3,7 +3,15 @@ inputs:
   project_name:
     required: true
     description: "e.g. snuba, sentry, relay, self-hosted"
-# TODO: figure out inputs for containers
+  local_image:
+    required: false
+    description: "The built relay, snuba, sentry image to test against."
+  docker_repo:
+    required: false
+    description: "Docker target repo for publishing, e.g. ghcr.io/getsentry/snuba"
+  docker_password:
+    required: false
+    description: "The sentrybuilder password to log in to docker to push the successful image"
 runs:
   using: "composite"
   steps:
@@ -15,7 +23,6 @@ runs:
       uses: actions/checkout@v3
       with:
         repository: "getsentry/self-hosted"
-        ref: 
         path: self-hosted
     - name: Check needed project containers are built
       if: ${{ inputs.project_name != "self-hosted" }}
@@ -34,7 +41,18 @@ runs:
           docker-compose logs;
           exit $test_return;
         fi
- 
-        
-    
+     - name: Get short SHA for docker tag
+       if: ${{ inputs.project_name != "self-hosted" && github.ref_name == "master" }}
+       id: sha_short
+       run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+     - name: Push built docker image
+       if: ${{ inputs.project_name != "self-hosted" && github.ref_name == "master" }}
+       run: |
+        echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
+        docker push ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${GITHUB_SHA}
+        docker push ${{ inputs.docker_repo }}:${GITHUB_SHA}
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:nightly
+        docker push ${{ inputs.docker_repo }}:nightly
 
