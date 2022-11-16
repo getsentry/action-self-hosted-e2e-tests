@@ -11,6 +11,7 @@ inputs:
     description: "Docker target repo for publishing, e.g. ghcr.io/getsentry/snuba"
   docker_password:
     required: false
+    default: ""
     description: "The sentrybuilder password to log in to docker to push the successful image"
 runs:
   using: "composite"
@@ -57,7 +58,8 @@ runs:
       if: ${{ inputs.project_name != 'self-hosted' && github.ref_name == 'master' }}
       shell: bash
       run: |
-        echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin
+        # only login if the password is set
+        if [[ "${{inputs.docker_password}}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
         docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
         docker push ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
         docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${GITHUB_SHA}
