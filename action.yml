@@ -16,10 +16,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # Note: we cannot checkout the project here because we need relay to build relay-deps
-    - name: Check project checkout is present at the correct path
-      run: test -d ${{ inputs.project_name }}
-      shell: bash
     - name: Checkout self-hosted if needed by another project
       if: ${{ inputs.project_name != 'self-hosted' }}
       uses: actions/checkout@v3
