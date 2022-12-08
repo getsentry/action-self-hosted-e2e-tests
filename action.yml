@@ -57,10 +57,10 @@ runs:
       run: |
         # only login if the password is set
         if [[ "${{inputs.docker_password}}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
-        docker push ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${GITHUB_SHA}
-        docker push ${{ inputs.docker_repo }}:${GITHUB_SHA}
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:nightly
-        docker push ${{ inputs.docker_repo }}:nightly
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}-tmp
+        docker push ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}-tmp
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${GITHUB_SHA}-tmp
+        docker push ${{ inputs.docker_repo }}:${GITHUB_SHA}-tmp
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:nightly-tmp
+        docker push ${{ inputs.docker_repo }}:nightly-tmp
 
