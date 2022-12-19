@@ -51,6 +51,7 @@ runs:
       shell: bash
       run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - name: Push built docker image
+      if: ${{ github.ref_name == 'master' }}
       shell: bash
       run: |
         # only login if the password is set
