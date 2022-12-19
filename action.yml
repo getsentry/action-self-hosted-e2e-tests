@@ -13,6 +13,15 @@ inputs:
     required: false
     default: ""
     description: "The sentrybuilder password to log in to docker to push the successful image"
+  full_sha:
+    required: true
+    default: ""
+    description: "The commit SHA that should get pushed to DockerHub"
+  short_sha:
+    required: true
+    default: ""
+    description: "The short commit SHA that should get pushed to DockerHub"
+
 runs:
   using: "composite"
   steps:
@@ -55,10 +64,13 @@ runs:
       run: |
         # only login if the password is set
         if [[ "${{inputs.docker_password}}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}-tmp
-        docker push ${{ inputs.docker_repo }}:${{ steps.sha_short.outputs.sha }}-tmp
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${GITHUB_SHA}-tmp
-        docker push ${{ inputs.docker_repo }}:${GITHUB_SHA}-tmp
+        # We push 3 tags to Dockerhub:
+        # first, the full sha of the commit
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ inputs.full_sha }}-tmp
+        docker push ${{ inputs.docker_repo }}:${{ inputs.full_sha }}-tmp
+        # second, the short sha of the commit
+        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ inputs.short_sha }}-tmp
+        docker push ${{ inputs.docker_repo }}:${{ inputs.short_sha }}-tmp
+        # finally, nightly
         docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:nightly-tmp
         docker push ${{ inputs.docker_repo }}:nightly-tmp
-
