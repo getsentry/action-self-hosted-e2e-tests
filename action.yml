@@ -54,11 +54,6 @@ runs:
           docker-compose logs;
           exit $test_return;
         fi
-    - name: Get short SHA for docker tag
-      if: ${{ inputs.project_name != 'self-hosted' }}
-      id: sha_short
-      shell: bash
-      run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - name: Push built docker image
       shell: bash
       run: |
