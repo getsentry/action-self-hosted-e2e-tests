@@ -3,38 +3,41 @@ inputs:
   project_name:
     required: true
     description: "e.g. snuba, sentry, relay, self-hosted"
-  local_image:
-    required: false
-    description: "The built relay, snuba, sentry image to test against."
+  image_url:
+    required: true
+    description: "The URL to the built relay, snuba, sentry image to test against."
   docker_repo:
     required: false
-    description: "Docker target repo for publishing, e.g. ghcr.io/getsentry/snuba"
+    description: "Docker target repo for publishing, e.g. getsentry/snuba"
   docker_password:
     required: false
     default: ""
     description: "The sentrybuilder password to log in to docker to push the successful image"
-  full_sha:
-    required: true
-    default: ""
-    description: "The commit SHA that should get pushed to DockerHub"
-  short_sha:
-    required: true
-    default: ""
-    description: "The short commit SHA that should get pushed to DockerHub"
 
 runs:
   using: "composite"
   steps:
+    - name: Check we are in a checkout for the correct repo
+      if: ${{ inputs.project_name != 'self-hosted' }}
+      shell: bash
+      run: git status
     - name: Checkout self-hosted if needed by another project
       if: ${{ inputs.project_name != 'self-hosted' }}
       uses: actions/checkout@v3
       with:
         repository: "getsentry/self-hosted"
         path: self-hosted
-    - name: Check needed project containers are built
+    - name: Pull the test image
       if: ${{ inputs.project_name != 'self-hosted' }}
-      run: test "$(docker images -q ${{ inputs.project_name }} 2> /dev/null)" == ""
-      shell: bash
+      id: image_pull
+      env:
+        IMAGE_URL: ${{ inputs.image_url }}
+      run: |
+        echo "We poll for the Docker image that the GCB/GHA build produces until it succeeds or this job times out."
+        echo "Polling for $IMAGE_URL"
+        until docker pull "$IMAGE_URL" 2>/dev/null; do
+           sleep 10
+        done
     - name: Run the installer
       run: |
         cd self-hosted
@@ -54,19 +57,35 @@ runs:
           docker-compose logs;
           exit $test_return;
         fi
-    - name: Push built docker image
-      if: ${{ github.ref_name == 'master' || github.ref_name == 'main' }}
+    - name: Get short SHA for docker tag
+      if: ${{ inputs.project_name != 'self-hosted' }}
+      id: short_sha
       shell: bash
       run: |
+        SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA"
+        if [[ -z "$SHORT_SHA" ]]; then
+          echo "Short SHA empty? Re-running rev-parse."
+          git rev-parse --short "$GITHUB_SHA"
+        else
+          echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+        fi
+    - name: Push built docker image
+      if: ${{ (github.ref_name == 'master' || github.ref_name == 'main') && inputs.project_name != 'self-hosted' }}
+      shell: bash
+      env:
+        SHORT_SHA: ${{ steps.short_sha.outputs.sha }}
+        IMAGE_URL: ${{ inputs.image_url }}
+        DOCKER_REPO: ${{ inputs.docker_repo }}
+      run: |
         # only login if the password is set
-        if [[ "${{inputs.docker_password}}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
+        if [[ "${{ inputs.docker_password }}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
         # We push 3 tags to Dockerhub:
         # first, the full sha of the commit
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ inputs.full_sha }}-tmp
-        docker push ${{ inputs.docker_repo }}:${{ inputs.full_sha }}-tmp
+        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${GITHUB_SHA}-tmp
+        docker push ${DOCKER_REPO}:${GITHUB_SHA}-tmp
         # second, the short sha of the commit
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:${{ inputs.short_sha }}-tmp
-        docker push ${{ inputs.docker_repo }}:${{ inputs.short_sha }}-tmp
+        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${SHORT_SHA}-tmp
+        docker push ${DOCKER_REPO}:${SHORT_SHA}-tmp
         # finally, nightly
-        docker tag ${{ inputs.local_image }} ${{ inputs.docker_repo }}:nightly-tmp
-        docker push ${{ inputs.docker_repo }}:nightly-tmp
+        docker tag ${IMAGE_URL} ${DOCKER_REPO}:nightly-tmp
+        docker push ${DOCKER_REPO}:nightly-tmp
