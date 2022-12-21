@@ -63,7 +63,7 @@ runs:
       id: short_sha
       shell: bash
       run: |
-        SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA"
+        SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA")
         if [[ -z "$SHORT_SHA" ]]; then
           echo "Short SHA empty? Re-running rev-parse."
           git rev-parse --short "$GITHUB_SHA"
