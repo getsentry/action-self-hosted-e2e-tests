@@ -82,11 +82,11 @@ runs:
         if [[ "${{ inputs.docker_password }}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
         # We push 3 tags to Dockerhub:
         # first, the full sha of the commit
-        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${GITHUB_SHA}-tmp
-        docker push ${DOCKER_REPO}:${GITHUB_SHA}-tmp
+        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${GITHUB_SHA}
+        docker push ${DOCKER_REPO}:${GITHUB_SHA}
         # second, the short sha of the commit
-        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${SHORT_SHA}-tmp
-        docker push ${DOCKER_REPO}:${SHORT_SHA}-tmp
+        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${SHORT_SHA}
+        docker push ${DOCKER_REPO}:${SHORT_SHA}
         # finally, nightly
-        docker tag ${IMAGE_URL} ${DOCKER_REPO}:nightly-tmp
-        docker push ${DOCKER_REPO}:nightly-tmp
+        docker tag ${IMAGE_URL} ${DOCKER_REPO}:nightly
+        docker push ${DOCKER_REPO}:nightly
