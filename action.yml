@@ -43,9 +43,9 @@ runs:
       shell: bash
       run: |
         cd self-hosted
-        cp .env .env.custom
-        echo -n "${{ inputs.project_name }}_IMAGE=" | tr '[:lower:]' '[:upper:]' >> .env.custom
-        echo "${{ inputs.image_url }}" >> .env.custom
+        image_var=$(echo ${{ inputs.project_name }}_IMAGE | tr '[:lower:]' '[:upper:]')
+        cat .env | grep -v $image_var > .env.custom
+        echo "${image_var}=${{ inputs.image_url }}" >> .env.custom
         cat .env.custom
     - name: Run the installer
       run: |
