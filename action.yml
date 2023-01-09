@@ -39,6 +39,12 @@ runs:
         until docker pull "$IMAGE_URL" 2>/dev/null; do
            sleep 10
         done
+    - name: Configure to use the test image
+      shell: bash
+      run: |
+        cd self-hosted
+        echo -n "${{ inputs.project_name }}_IMAGE=" | tr '[:lower:]' '[:upper:]' > .env.custom
+        echo "${{ inputs.image_url }}" >> .env.custom
     - name: Run the installer
       run: |
         cd self-hosted
