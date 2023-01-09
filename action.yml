@@ -40,6 +40,7 @@ runs:
            sleep 10
         done
     - name: Configure to use the test image
+      if: ${{ inputs.project_name != 'self-hosted' }}
       shell: bash
       run: |
         cd self-hosted
