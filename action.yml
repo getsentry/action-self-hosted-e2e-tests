@@ -54,7 +54,7 @@ runs:
     - name: Run the installer
       run: |
         cd self-hosted
-        ./install.sh --no-report-self-hosted-issues
+        ./install.sh --no-report-self-hosted-issues --skip-commit-check
       shell: bash
     - name: Run tests
       shell: bash
