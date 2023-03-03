@@ -62,7 +62,7 @@ runs:
         set +e
         cd self-hosted
         ./test.sh
-        test_returns=$?
+        test_return=$?
         set -e
         if [[ $test_return -ne 0 ]]; then
           echo "Test failed.";
