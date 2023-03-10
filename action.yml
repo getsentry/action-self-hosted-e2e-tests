@@ -47,6 +47,7 @@ runs:
         echo "We poll for the Docker image that the GCB/GHA build produces until it succeeds or this job times out."
         echo "Polling for $IMAGE_URL"
         until docker pull "$IMAGE_URL" 2>/dev/null; do
+           echo "Sleeping 10s before polling for $IMAGE_URL"
            sleep 10
         done
     - name: Configure to use the test image
