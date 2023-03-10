@@ -37,7 +37,7 @@ runs:
         IMAGE_URL: ${{ inputs.image_url }}
       shell: bash
       run: |
-        docker image inspect "$IMAGE_URL"
+        docker image inspect "$IMAGE_URL" &> /dev/null
         if [ $? -eq 0 ]
         then
           echo "Docker image already found."
