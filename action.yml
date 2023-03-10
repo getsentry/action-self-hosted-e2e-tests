@@ -3,6 +3,10 @@ inputs:
   project_name:
     required: true
     description: "e.g. snuba, sentry, relay, self-hosted"
+  pull_docker_image:
+    required: false
+    default: true
+    description: "Control whether the docker container should be pulled or not."
   image_url:
     required: true
     description: "The URL to the built relay, snuba, sentry image to test against."
@@ -31,7 +35,7 @@ runs:
       shell: bash
       run: curl -sL https://sentry.io/get-cli/ | sh
     - name: Pull the test image
-      if: ${{ inputs.project_name != 'self-hosted' }}
+      if: ${{ inputs.project_name != 'self-hosted' and inputs.pull_docker_image == true }}
       id: image_pull
       env:
         IMAGE_URL: ${{ inputs.image_url }}
