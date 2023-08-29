@@ -56,16 +56,18 @@ runs:
       shell: bash
     - name: Run tests
       shell: bash
+      env:
+        SENTRY_DSN: https://7b09f40b225179cd5d349ff37f409465@o1.ingest.sentry.io/4505784431476736
       run: |
         set +e
         cd self-hosted
+        exec &> >(tee -a "logs.txt")
         ./test.sh
         test_return=$?
         set -e
         if [[ $test_return -ne 0 ]]; then
           echo "Test failed.";
-          docker-compose ps;
-          docker-compose logs;
+          sentry-cli send-event -m "Self-hosted e2e action failed in ${{ inputs.project_name }}" --logfile "logs.txt";
           exit $test_return;
         fi
     - name: Get short SHA for docker tag
