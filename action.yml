@@ -62,7 +62,7 @@ runs:
 
     - name: Setup dev environment
       run: |
-        pip install -r requirements-dev.txt
+        pip install -r self-hosted/requirements-dev.txt
         echo "PY_COLORS=1" >> "$GITHUB_ENV"
       shell: bash
 
