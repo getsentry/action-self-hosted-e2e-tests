@@ -21,15 +21,18 @@ runs:
       if: ${{ inputs.project_name != 'self-hosted' }}
       shell: bash
       run: git status
+
     - name: Checkout self-hosted if needed by another project
       if: ${{ inputs.project_name != 'self-hosted' }}
       uses: actions/checkout@v3
       with:
         repository: "getsentry/self-hosted"
         path: self-hosted
+
     - name: Install sentry-cli
       shell: bash
       run: curl -sL https://sentry.io/get-cli/ | sh
+
     - name: Pull the test image
       if: ${{ inputs.project_name != 'self-hosted' }}
       id: image_pull
@@ -40,6 +43,7 @@ runs:
         echo "We poll for the Docker image that the GCB/GHA build produces until it succeeds or this job times out."
         echo "Polling for $IMAGE_URL"
         timeout 20m bash -c 'until docker pull "$IMAGE_URL" 2>/dev/null; do sleep 10; done'
+
     - name: Configure to use the test image
       if: ${{ inputs.project_name != 'self-hosted' }}
       shell: bash
@@ -49,11 +53,19 @@ runs:
         cat .env | grep -v $image_var > .env.custom
         echo "${image_var}=${{ inputs.image_url }}" >> .env.custom
         cat .env.custom
+
     - name: Run the installer
       run: |
         cd self-hosted
         ./install.sh --no-report-self-hosted-issues --skip-commit-check
       shell: bash
+
+    - name: Setup dev environment
+      run: |
+        pip install -r self-hosted/requirements-dev.txt
+        echo "PY_COLORS=1" >> "$GITHUB_ENV"
+      shell: bash
+
     - name: Run tests
       shell: bash
       env:
@@ -61,15 +73,13 @@ runs:
       run: |
         set +e
         cd self-hosted
-        exec &> >(tee -a "logs.txt")
-        ./test.sh
-        test_return=$?
-        set -e
+        pytest --reruns 3 _integration-test/ --customizations=disabled
         if [[ $test_return -ne 0 ]]; then
           echo "Test failed.";
           sentry-cli send-event -m "Self-hosted e2e action failed in ${{ inputs.project_name }}" --logfile "logs.txt";
           exit $test_return;
         fi
+
     - name: Get short SHA for docker tag
       if: ${{ inputs.project_name != 'self-hosted' }}
       id: short_sha
@@ -82,6 +92,7 @@ runs:
         else
           echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
         fi
+
     - name: Push built docker image
       if: ${{ (github.ref_name == 'master' || github.ref_name == 'main') && inputs.project_name != 'self-hosted' }}
       shell: bash
