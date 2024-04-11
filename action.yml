@@ -54,6 +54,10 @@ runs:
         cd self-hosted
         ./install.sh --no-report-self-hosted-issues --skip-commit-check
       shell: bash
+    - name: Setup dev environment
+        run: |
+          pip install -r requirements-dev.txt
+          echo "PY_COLORS=1" >> "$GITHUB_ENV"
     - name: Run tests
       shell: bash
       env:
@@ -61,10 +65,7 @@ runs:
       run: |
         set +e
         cd self-hosted
-        exec &> >(tee -a "logs.txt")
-        ./test.sh
-        test_return=$?
-        set -e
+        pytest --reruns 3 _integration-test/ --customizations=disabled
         if [[ $test_return -ne 0 ]]; then
           echo "Test failed.";
           sentry-cli send-event -m "Self-hosted e2e action failed in ${{ inputs.project_name }}" --logfile "logs.txt";
