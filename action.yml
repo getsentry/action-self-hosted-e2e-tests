@@ -34,6 +34,7 @@ runs:
       run: curl -sL https://sentry.io/get-cli/ | sh
 
     - name: Get Compose v2.26.0
+      shell: bash
       run: |
         # Always remove `docker compose` in order to install version 2.26.0
         sudo rm -f "/usr/local/lib/docker/cli-plugins/docker-compose"
