@@ -36,14 +36,12 @@ runs:
     - name: Get Compose v2.26.0
       shell: bash
       run: |
-        # Always remove `docker compose` in order to install version 2.26.0
-        sudo rm -f "/usr/local/lib/docker/cli-plugins/docker-compose"
         # Docker Compose comes pre-installed, reinstall with a specific version
         sudo rm -f "/usr/local/bin/docker-compose"
         sudo rm -f "/usr/local/lib/docker/cli-plugins/docker-compose"
         sudo mkdir -p "/usr/local/lib/docker/cli-plugins"
         sudo curl -L https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-`uname -s`-`uname -m` -o "/usr/local/lib/docker/cli-plugins/docker-compose"
-        sudo chmod +x "${{ matrix.compose_path }}/docker-compose"
+        sudo chmod +x "/usr/local/lib/docker/cli-plugins/docker-compose"
 
     - name: Pull the test image
       if: ${{ inputs.project_name != 'self-hosted' }}
