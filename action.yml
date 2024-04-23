@@ -33,6 +33,16 @@ runs:
       shell: bash
       run: curl -sL https://sentry.io/get-cli/ | sh
 
+    - name: Get Compose v2.26.0
+      shell: bash
+      run: |
+        # Docker Compose comes pre-installed, reinstall with a specific version
+        sudo rm -f "/usr/local/bin/docker-compose"
+        sudo rm -f "/usr/local/lib/docker/cli-plugins/docker-compose"
+        sudo mkdir -p "/usr/local/lib/docker/cli-plugins"
+        sudo curl -L https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-`uname -s`-`uname -m` -o "/usr/local/lib/docker/cli-plugins/docker-compose"
+        sudo chmod +x "/usr/local/lib/docker/cli-plugins/docker-compose"
+
     - name: Pull the test image
       if: ${{ inputs.project_name != 'self-hosted' }}
       id: image_pull
@@ -73,7 +83,7 @@ runs:
       run: |
         set +e
         cd self-hosted
-        pytest --reruns 3 _integration-test/ --customizations=disabled
+        pytest --reruns 1 _integration-test/ --customizations=disabled
         if [[ $test_return -ne 0 ]]; then
           echo "Test failed.";
           sentry-cli send-event -m "Self-hosted e2e action failed in ${{ inputs.project_name }}" --logfile "logs.txt";
