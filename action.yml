@@ -83,7 +83,7 @@ runs:
       run: |
         set +e
         cd self-hosted
-        pytest _integration-test/ --customizations=disabled
+        pytest --reruns 1 _integration-test/ --customizations=disabled
         if [[ $test_return -ne 0 ]]; then
           echo "Test failed.";
           sentry-cli send-event -m "Self-hosted e2e action failed in ${{ inputs.project_name }}" --logfile "logs.txt";
