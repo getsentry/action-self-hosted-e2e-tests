@@ -79,47 +79,7 @@ runs:
     - name: Run tests
       shell: bash
       env:
-        SENTRY_DSN: https://7b09f40b225179cd5d349ff37f409465@o1.ingest.sentry.io/4505784431476736
+        PYTEST_SENTRY_DSN: https://5a620019b5124cbba230a9e62db9b825@o1.ingest.us.sentry.io/6627632
       run: |
-        set +e
         cd self-hosted
         pytest --reruns 1 _integration-test/ --customizations=disabled
-        if [[ $test_return -ne 0 ]]; then
-          echo "Test failed.";
-          sentry-cli send-event -m "Self-hosted e2e action failed in ${{ inputs.project_name }}" --logfile "logs.txt";
-          exit $test_return;
-        fi
-
-    - name: Get short SHA for docker tag
-      if: ${{ inputs.project_name != 'self-hosted' }}
-      id: short_sha
-      shell: bash
-      run: |
-        SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA")
-        if [[ -z "$SHORT_SHA" ]]; then
-          echo "Short SHA empty? Re-running rev-parse."
-          git rev-parse --short "$GITHUB_SHA"
-        else
-          echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Push built docker image
-      if: ${{ (github.ref_name == 'master' || github.ref_name == 'main') && inputs.project_name != 'self-hosted' }}
-      shell: bash
-      env:
-        SHORT_SHA: ${{ steps.short_sha.outputs.sha }}
-        IMAGE_URL: ${{ inputs.image_url }}
-        DOCKER_REPO: ${{ inputs.docker_repo }}
-      run: |
-        # only login if the password is set
-        if [[ "${{ inputs.docker_password }}" ]]; then echo "${{ inputs.docker_password }}" | docker login --username=sentrybuilder --password-stdin; fi
-        # We push 3 tags to Dockerhub:
-        # first, the full sha of the commit
-        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${GITHUB_SHA}
-        docker push ${DOCKER_REPO}:${GITHUB_SHA}
-        # second, the short sha of the commit
-        docker tag ${IMAGE_URL} ${DOCKER_REPO}:${SHORT_SHA}
-        docker push ${DOCKER_REPO}:${SHORT_SHA}
-        # finally, nightly
-        docker tag ${IMAGE_URL} ${DOCKER_REPO}:nightly
-        docker push ${DOCKER_REPO}:nightly
