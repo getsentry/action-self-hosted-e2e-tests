@@ -62,6 +62,7 @@ runs:
         image_var=$(echo ${{ inputs.project_name }}_IMAGE | tr '[:lower:]' '[:upper:]')
         sed -i "/^$image_var/d" .env
         echo "${image_var}=${{ inputs.image_url }}" >> .env
+        cat .env
 
     - name: Run the installer
       run: |
