@@ -60,9 +60,9 @@ runs:
       run: |
         cd self-hosted
         image_var=$(echo ${{ inputs.project_name }}_IMAGE | tr '[:lower:]' '[:upper:]')
-        cat .env | grep -v $image_var > .env.custom
-        echo "${image_var}=${{ inputs.image_url }}" >> .env.custom
-        cat .env.custom
+        sed -i "/^$image_var/d" .env
+        echo "${image_var}=${{ inputs.image_url }}" >> .env
+        cat .env
 
     - name: Run the installer
       run: |
