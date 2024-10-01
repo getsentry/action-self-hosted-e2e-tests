@@ -52,7 +52,7 @@ runs:
       run: |
         echo "We poll for the Docker image that the GCB/GHA build produces until it succeeds or this job times out."
         echo "Polling for $IMAGE_URL"
-        timeout 20m bash -c 'until docker pull "$IMAGE_URL" 2>/dev/null; do sleep 10; done'
+        [ -n "$(docker images -q $IMAGE_URL)" ] || timeout 20m bash -c 'until docker pull "$IMAGE_URL" 2>/dev/null; do sleep 10; done'
 
     - name: Configure to use the test image
       if: ${{ inputs.project_name != 'self-hosted' }}
